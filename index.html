@@ -336,38 +336,54 @@ echo 'source ~/ros2_ws/install/setup.bash' &gt;&gt; ~/.bashrc</pre>
         Para <em>rodar</em> as redes você <strong>não</strong> precisa instalar o CUDA Toolkit completo: o PyTorch (instalado junto com o <code>ultralytics</code> no passo 07) já traz o <em>runtime</em> CUDA embutido. O único requisito real é o <strong>driver NVIDIA</strong>. O Toolkit (<code>nvcc</code>) só é necessário para compilar código CUDA próprio.
       </div>
 
-      <h3>1. Verificar se há GPU NVIDIA</h3>
+      <div class="callout warn">
+        <span class="tag t-warn">Antes de tudo: qual é o seu ambiente?</span>
+        O procedimento do driver é <strong>diferente</strong> em Ubuntu nativo e no WSL2 (Ubuntu dentro do Windows). Descubra com o comando abaixo e siga <strong>apenas</strong> a rota correspondente.
+      </div>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre><span class="cmt"># Lista dispositivos NVIDIA no barramento PCI (vazio = sem GPU NVIDIA)</span>
-lspci | grep -i nvidia</pre>
+<pre><span class="cmt"># Se imprimir algo com "microsoft" ou "WSL", você está no WSL2</span>
+uname -r</pre>
       </div>
 
-      <h3>2. Instalar o driver NVIDIA</h3>
+      <h3>Rota A — Ubuntu nativo (bare-metal)</h3>
+      <p>Instale o driver NVIDIA dentro do próprio Ubuntu.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre><span class="cmt"># Mostra os drivers disponíveis e o recomendado para a sua GPU</span>
-ubuntu-drivers devices
+<pre><span class="cmt"># 1) Verifica se há GPU NVIDIA (vazio = sem GPU no barramento PCI)</span>
+lspci | grep -i nvidia
 
-<span class="cmt"># Instala automaticamente o driver recomendado</span>
+<span class="cmt"># 2) Mostra os drivers disponíveis e instala o recomendado</span>
+ubuntu-drivers devices
 sudo ubuntu-drivers autoinstall
 
-<span class="cmt"># Reinicia para carregar o driver</span>
-sudo systemctl reboot</pre>
-      </div>
+<span class="cmt"># 3) Reinicia para carregar o driver</span>
+sudo systemctl reboot
 
-      <h3>3. Confirmar o driver</h3>
-      <div class="code">
-        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre><span class="cmt"># Mostra a GPU, a versão do driver e a versão máxima de CUDA suportada</span>
+<span class="cmt"># 4) Após reiniciar, confirma o driver e a GPU</span>
 nvidia-smi</pre>
       </div>
       <div class="callout tip">
         <span class="tag t-tip">Dica</span>
-        A "CUDA Version" exibida no <code>nvidia-smi</code> é a versão <em>máxima suportada pelo driver</em>, não um toolkit instalado. Serve apenas como referência — não precisa bater com nada.
+        A "CUDA Version" exibida no <code>nvidia-smi</code> é a versão <em>máxima suportada pelo driver</em>, não um toolkit instalado. Serve apenas como referência.
       </div>
 
-      <h3>4. Confirmar que o PyTorch enxerga a GPU</h3>
+      <h3>Rota B — WSL2 (Ubuntu no Windows)</h3>
+      <div class="callout warn">
+        <span class="tag t-warn">Não instale driver no Ubuntu!</span>
+        No WSL2 o driver NVIDIA fica no <strong>Windows</strong>. <strong>Nunca</strong> rode <code>ubuntu-drivers autoinstall</code> nem <code>apt install nvidia-driver-XXX</code> dentro do Ubuntu — isso quebra o acesso à GPU do WSL. Basta manter o driver do Windows atualizado (GeForce/RTX no site da NVIDIA).
+      </div>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Único comando necessário: confirma que a GPU aparece via driver do Windows</span>
+nvidia-smi</pre>
+      </div>
+      <div class="callout">
+        <span class="tag t-note">O que é normal no WSL2</span>
+        <code>lspci | grep -i nvidia</code> vem <strong>vazio</strong> e <code>ubuntu-drivers</code> <strong>não existe</strong> — é esperado, porque o WSL2 usa uma GPU paravirtualizada (<code>/dev/dxg</code>), sem passagem de PCI real. Se o <code>nvidia-smi</code> mostra a sua GPU (ex.: <em>RTX A1000</em>, <em>CUDA Version 12.8</em>), está tudo certo.
+      </div>
+
+      <h3>Confirmar que o PyTorch enxerga a GPU</h3>
       <p>Este teste usa o PyTorch instalado junto com o <code>ultralytics</code> no passo 07.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
