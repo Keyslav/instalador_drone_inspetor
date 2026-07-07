@@ -28,11 +28,12 @@
       <li><a href="#s5"><span class="num">05</span> Mundos e modelos Gazebo</a></li>
       <li><a href="#s6"><span class="num">06</span> Plugins do Gazebo</a></li>
       <li><a href="#s7"><span class="num">07</span> Pacotes do projeto</a></li>
-      <li><a href="#s8"><span class="num">08</span> Airframe 4030</a></li>
-      <li><a href="#s9"><span class="num">09</span> Redes treinadas (.pt)</a></li>
-      <li><a href="#s10"><span class="num">10</span> Correção do NumPy</a></li>
-      <li><a href="#s11"><span class="num">11</span> QGroundControl</a></li>
-      <li><a href="#s12"><span class="num">12</span> Execução do projeto</a></li>
+      <li><a href="#s8"><span class="num">08</span> GPU NVIDIA / CUDA</a></li>
+      <li><a href="#s9"><span class="num">09</span> Airframe 4030</a></li>
+      <li><a href="#s10"><span class="num">10</span> Redes treinadas (.pt)</a></li>
+      <li><a href="#s11"><span class="num">11</span> Correção do NumPy</a></li>
+      <li><a href="#s12"><span class="num">12</span> QGroundControl</a></li>
+      <li><a href="#s13"><span class="num">13</span> Execução do projeto</a></li>
     </ul>
   </nav>
 
@@ -57,7 +58,7 @@
       <p>O projeto integra quatro grandes componentes que serão instalados nesta ordem: o <strong>firmware PX4</strong> (controladora de voo em SITL), o <strong>ROS 2 Jazzy</strong> (middleware de robótica), o <strong>Micro-XRCE-DDS Agent</strong> (ponte entre PX4 e ROS 2) e os <strong>pacotes do projeto</strong> (visão computacional, missão e estação de controle).</p>
       <div class="callout">
         <span class="tag t-note">Pré-requisitos</span>
-        Ubuntu 24.04 (nativo ou WSL2), placa de vídeo com drivers atualizados (o Gazebo usa aceleração gráfica), acesso à internet e cerca de <strong>40&nbsp;GB livres</strong> de disco. Recomenda-se GPU NVIDIA para a renderização.
+        Ubuntu 24.04 (nativo ou WSL2), placa de vídeo com drivers atualizados (o Gazebo usa aceleração gráfica), acesso à internet e cerca de <strong>40&nbsp;GB livres</strong> de disco. Recomenda-se GPU NVIDIA para a renderização e para acelerar a visão computacional (veja o <a href="#s8">passo 08</a>).
       </div>
       <div class="callout tip">
         <span class="tag t-tip">Dica</span>
@@ -319,11 +320,85 @@ echo 'source ~/ros2_ws/install/setup.bash' &gt;&gt; ~/.bashrc</pre>
         <span class="tag t-note">Nota</span>
         Se o <code>sudo rosdep init</code> reclamar que já foi inicializado, ignore — basta seguir com <code>rosdep update</code>.
       </div>
+      <div class="callout tip">
+        <span class="tag t-tip">GPU</span>
+        Tem placa NVIDIA? Faça o <a href="#s8">passo 08 (GPU / CUDA)</a> para rodar as redes de visão na GPU — bem mais rápido que na CPU.
+      </div>
     </section>
 
     <!-- ===== 08 ===== -->
     <section id="s8">
-      <h2 class="step"><span class="step-num">08</span> Instalar o airframe 4030 no firmware</h2>
+      <h2 class="step"><span class="step-num">08</span> GPU NVIDIA / CUDA (opcional)</h2>
+      <p>As redes de visão computacional (YOLO / ultralytics) rodam <strong>muito mais rápido</strong> com uma GPU NVIDIA. Se a máquina <strong>não</strong> tiver GPU NVIDIA, pule este passo — tudo continua funcionando em CPU, apenas mais devagar.</p>
+
+      <div class="callout">
+        <span class="tag t-note">Entenda</span>
+        Para <em>rodar</em> as redes você <strong>não</strong> precisa instalar o CUDA Toolkit completo: o PyTorch (instalado junto com o <code>ultralytics</code> no passo 07) já traz o <em>runtime</em> CUDA embutido. O único requisito real é o <strong>driver NVIDIA</strong>. O Toolkit (<code>nvcc</code>) só é necessário para compilar código CUDA próprio.
+      </div>
+
+      <h3>1. Verificar se há GPU NVIDIA</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Lista dispositivos NVIDIA no barramento PCI (vazio = sem GPU NVIDIA)</span>
+lspci | grep -i nvidia</pre>
+      </div>
+
+      <h3>2. Instalar o driver NVIDIA</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Mostra os drivers disponíveis e o recomendado para a sua GPU</span>
+ubuntu-drivers devices
+
+<span class="cmt"># Instala automaticamente o driver recomendado</span>
+sudo ubuntu-drivers autoinstall
+
+<span class="cmt"># Reinicia para carregar o driver</span>
+sudo systemctl reboot</pre>
+      </div>
+
+      <h3>3. Confirmar o driver</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Mostra a GPU, a versão do driver e a versão máxima de CUDA suportada</span>
+nvidia-smi</pre>
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Dica</span>
+        A "CUDA Version" exibida no <code>nvidia-smi</code> é a versão <em>máxima suportada pelo driver</em>, não um toolkit instalado. Serve apenas como referência — não precisa bater com nada.
+      </div>
+
+      <h3>4. Confirmar que o PyTorch enxerga a GPU</h3>
+      <p>Este teste usa o PyTorch instalado junto com o <code>ultralytics</code> no passo 07.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Deve imprimir "CUDA disponível: True" e o nome da GPU</span>
+python3 -c "import torch; print('CUDA disponível:', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'usando CPU')"</pre>
+      </div>
+      <div class="callout fix">
+        <span class="tag t-fix">Se retornar False</span>
+        Em alguns casos o <code>ultralytics</code> instala uma versão do PyTorch só-CPU. Reinstale a versão com CUDA (comando abaixo) e rode o teste novamente.
+      </div>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Reinstala o PyTorch com suporte a CUDA 12.x</span>
+pip install --break-system-packages --force-reinstall torch torchvision --index-url https://download.pytorch.org/whl/cu124</pre>
+      </div>
+
+      <h3>(Opcional) CUDA Toolkit completo</h3>
+      <p>Só necessário se você for <strong>compilar</strong> código CUDA próprio (<code>nvcc</code>). <strong>Não é preciso</strong> para rodar o projeto.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># OPCIONAL — instala o compilador CUDA (nvcc) e ferramentas de desenvolvimento</span>
+sudo apt install nvidia-cuda-toolkit -y
+
+<span class="cmt"># Verifica a instalação do compilador</span>
+nvcc --version</pre>
+      </div>
+    </section>
+
+    <!-- ===== 09 ===== -->
+    <section id="s9">
+      <h2 class="step"><span class="step-num">09</span> Instalar o airframe 4030 no firmware</h2>
       <p>Registra o airframe de simulação do projeto (<code>4030_gz_x500_uerj</code>) dentro do PX4 e recompila.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
@@ -351,9 +426,9 @@ make px4_sitl</pre>
       </div>
     </section>
 
-    <!-- ===== 09 ===== -->
-    <section id="s9">
-      <h2 class="step"><span class="step-num">09</span> Baixar as redes treinadas (.pt)</h2>
+    <!-- ===== 10 ===== -->
+    <section id="s10">
+      <h2 class="step"><span class="step-num">10</span> Baixar as redes treinadas (.pt)</h2>
       <p>Baixa os pesos das redes de visão computacional já treinadas e os coloca na pasta <code>redes_treinadas</code> do pacote.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
@@ -377,9 +452,9 @@ rm ~/redes_treinadas.zip</pre>
       </div>
     </section>
 
-    <!-- ===== 10 ===== -->
-    <section id="s10">
-      <h2 class="step"><span class="step-num">10</span> Corrigir o conflito do NumPy</h2>
+    <!-- ===== 11 ===== -->
+    <section id="s11">
+      <h2 class="step"><span class="step-num">11</span> Corrigir o conflito do NumPy</h2>
       <p>O <code>ultralytics</code> instala o NumPy 2.x, que é incompatível com o <code>cv2</code>/<code>cv_bridge</code> (compilados contra o NumPy 1.x). Remover a versão instalada pelo pip devolve o controle ao NumPy 1.x do sistema (pacote <code>python3-numpy</code>).</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
@@ -395,9 +470,9 @@ python3 -m pip uninstall -y numpy --break-system-packages</pre>
       </div>
     </section>
 
-    <!-- ===== 11 ===== -->
-    <section id="s11">
-      <h2 class="step"><span class="step-num">11</span> QGroundControl (estação de solo)</h2>
+    <!-- ===== 12 ===== -->
+    <section id="s12">
+      <h2 class="step"><span class="step-num">12</span> QGroundControl (estação de solo)</h2>
       <p>Interface de controle e telemetria. Detecta o PX4 automaticamente por UDP (porta 14550) quando a simulação está rodando.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
@@ -442,9 +517,9 @@ chmod +x QGroundControl-x86_64.AppImage
       </div>
     </section>
 
-    <!-- ===== 12 ===== -->
-    <section id="s12">
-      <h2 class="step"><span class="step-num">12</span> Execução do projeto</h2>
+    <!-- ===== 13 ===== -->
+    <section id="s13">
+      <h2 class="step"><span class="step-num">13</span> Execução do projeto</h2>
       <p>Com tudo instalado, o projeto sobe em <strong>cinco terminais</strong>. Abra um terminal novo para cada um (todos já carregam ROS 2 e o workspace pelo <code>.bashrc</code>).</p>
 
       <div class="terminals">
