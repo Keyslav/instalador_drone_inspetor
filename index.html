@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instalação · DRONE_INSPETOR</title>
+  <meta name="description" content="Guia passo a passo de instalação do projeto DRONE_INSPETOR em Ubuntu 24.04 (PX4 + ROS 2 Jazzy + Gazebo).">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===================== NAVEGAÇÃO ===================== -->
+  <nav class="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">🛸</span>
+      <div>
+        <div class="sidebar__title">DRONE_INSPETOR</div>
+        <div class="sidebar__subtitle">Guia de instalação</div>
+      </div>
+    </div>
+    <ul class="toc">
+      <li><a href="#s0"><span class="num">00</span> Visão geral &amp; pré-requisitos</a></li>
+      <li><a href="#s1"><span class="num">01</span> Atualizar o sistema</a></li>
+      <li><a href="#s2"><span class="num">02</span> Firmware PX4</a></li>
+      <li><a href="#s3"><span class="num">03</span> ROS 2 Jazzy</a></li>
+      <li><a href="#s4"><span class="num">04</span> Micro-XRCE-DDS Agent</a></li>
+      <li><a href="#s5"><span class="num">05</span> Mundos e modelos Gazebo</a></li>
+      <li><a href="#s6"><span class="num">06</span> Plugins do Gazebo</a></li>
+      <li><a href="#s7"><span class="num">07</span> Pacotes do projeto</a></li>
+      <li><a href="#s8"><span class="num">08</span> Airframe 4030</a></li>
+      <li><a href="#s9"><span class="num">09</span> Redes treinadas (.pt)</a></li>
+      <li><a href="#s10"><span class="num">10</span> Correção do NumPy</a></li>
+      <li><a href="#s11"><span class="num">11</span> QGroundControl</a></li>
+      <li><a href="#s12"><span class="num">12</span> Execução do projeto</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===================== CONTEÚDO ===================== -->
+  <main class="content">
+
+    <div class="hero">
+      <h1>Implementação do projeto DRONE_INSPETOR</h1>
+      <p>Guia completo de instalação em <strong>Ubuntu 24.04</strong> — do zero até a simulação do drone de inspeção rodando.</p>
+      <div class="badges">
+        <span class="badge">Ubuntu 24.04</span>
+        <span class="badge">PX4 v1.16 (94bbd2d)</span>
+        <span class="badge">ROS 2 Jazzy</span>
+        <span class="badge">Gazebo Harmonic</span>
+        <span class="badge">Micro-XRCE-DDS</span>
+      </div>
+    </div>
+
+    <!-- ===== 00 ===== -->
+    <section id="s0">
+      <h2 class="step"><span class="step-num">00</span> Visão geral &amp; pré-requisitos</h2>
+      <p>O projeto integra quatro grandes componentes que serão instalados nesta ordem: o <strong>firmware PX4</strong> (controladora de voo em SITL), o <strong>ROS 2 Jazzy</strong> (middleware de robótica), o <strong>Micro-XRCE-DDS Agent</strong> (ponte entre PX4 e ROS 2) e os <strong>pacotes do projeto</strong> (visão computacional, missão e estação de controle).</p>
+      <div class="callout">
+        <span class="tag t-note">Pré-requisitos</span>
+        Ubuntu 24.04 (nativo ou WSL2), placa de vídeo com drivers atualizados (o Gazebo usa aceleração gráfica), acesso à internet e cerca de <strong>40&nbsp;GB livres</strong> de disco. Recomenda-se GPU NVIDIA para a renderização.
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Dica</span>
+        Rode cada bloco de comandos de cima para baixo. Vários passos pedem <strong>reinício</strong> ou <strong>novo terminal</strong> — respeite esses avisos, pois eles carregam variáveis de ambiente necessárias.
+      </div>
+    </section>
+
+    <!-- ===== 01 ===== -->
+    <section id="s1">
+      <h2 class="step"><span class="step-num">01</span> Atualizar o sistema</h2>
+      <p>Antes de tudo, atualize a lista de pacotes e o sistema para evitar conflitos de dependências durante a instalação.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Atualiza índices de pacotes e aplica todas as atualizações disponíveis</span>
+sudo apt update &amp;&amp; sudo apt upgrade -y</pre>
+      </div>
+    </section>
+
+    <!-- ===== 02 ===== -->
+    <section id="s2">
+      <h2 class="step"><span class="step-num">02</span> Compilação e instalação do firmware PX4</h2>
+      <p>Segue o procedimento oficial (<a href="https://docs.px4.io/main/en/dev_setup/dev_env_linux_ubuntu" target="_blank" rel="noopener">docs.px4.io</a>), porém com a <strong>versão fixada</strong> do PX4 para garantir reprodutibilidade — é a mesma da máquina de desenvolvimento.</p>
+
+      <div class="callout warn">
+        <span class="tag t-warn">Importante</span>
+        Não use a última <code>main</code> do PX4. O projeto depende do commit <code>94bbd2d6…</code> (PX4 v1.16). Versões mais novas quebram o build e o airframe 4030.
+      </div>
+
+      <h3>Clonar e fixar a versão</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Git é necessário para clonar o repositório</span>
+sudo apt install git -y
+
+<span class="cmt"># Clona o PX4 já com os submódulos (--recursive)</span>
+cd
+git clone https://github.com/PX4/PX4-Autopilot.git --recursive
+
+<span class="cmt"># Fixa o commit exato usado no projeto (fica em "detached HEAD" — é esperado)</span>
+cd PX4-Autopilot
+git checkout 94bbd2d69ade182bed087e8254515bb5f559285b
+
+<span class="cmt"># Realinha TODOS os submódulos para o estado desse commit</span>
+git submodule update --init --recursive</pre>
+      </div>
+
+      <h3>Instalar dependências de build</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Script oficial do PX4 instala toolchain, dependências e configura o ambiente</span>
+<span class="cmt"># (executado de DENTRO da pasta PX4-Autopilot)</span>
+bash ./Tools/setup/ubuntu.sh</pre>
+      </div>
+      <div class="callout fix">
+        <span class="tag t-fix">Correção</span>
+        No rascunho original o caminho era <code>./PX4-Autopilot/Tools/setup/ubuntu.sh</code>, mas como você já está <em>dentro</em> de <code>PX4-Autopilot</code>, o caminho correto é <code>./Tools/setup/ubuntu.sh</code>.
+      </div>
+
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Reinicie o sistema para aplicar grupos de usuário e variáveis do ambiente</span>
+sudo systemctl reboot</pre>
+      </div>
+
+      <h3>Compilar o firmware</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Após reiniciar, compila o firmware PX4 para simulação (SITL)</span>
+cd ~/PX4-Autopilot
+make px4_sitl</pre>
+      </div>
+
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Teste rápido: inicia uma simulação Gazebo com um drone x500 simples</span>
+<span class="cmt"># (feche com Ctrl+C após confirmar que abre sem erros)</span>
+make px4_sitl gz_x500</pre>
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Dica</span>
+        Este primeiro <code>make px4_sitl</code> também gera os <strong>plugins do Gazebo</strong> que serão copiados no passo 06. Não pule a compilação.
+      </div>
+    </section>
+
+    <!-- ===== 03 ===== -->
+    <section id="s3">
+      <h2 class="step"><span class="step-num">03</span> Instalação do ROS 2 Jazzy</h2>
+      <p>Procedimento oficial para o <strong>Jazzy</strong> (compatível com Ubuntu 24.04): <a href="https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html" target="_blank" rel="noopener">docs.ros.org/jazzy</a>.</p>
+
+      <h3>Configurar o locale (UTF-8)</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Verifica se o locale já suporta UTF-8</span>
+locale
+
+<span class="cmt"># Instala e gera um locale UTF-8</span>
+sudo apt update &amp;&amp; sudo apt install locales
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+<span class="cmt"># Confirma a configuração</span>
+locale</pre>
+      </div>
+
+      <h3>Adicionar o repositório do ROS 2</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Habilita o repositório "universe" do Ubuntu</span>
+sudo apt install software-properties-common -y
+sudo add-apt-repository universe
+
+<span class="cmt"># Instala o pacote que adiciona a fonte APT oficial do ROS 2</span>
+sudo apt update &amp;&amp; sudo apt install curl -y
+export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F'"' '{print $4}')
+curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release &amp;&amp; echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb"
+sudo dpkg -i /tmp/ros2-apt-source.deb</pre>
+      </div>
+
+      <h3>Instalar o ROS 2 e o bridge do Gazebo</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Ferramentas de desenvolvimento (colcon, rosdep, etc.)</span>
+sudo apt update &amp;&amp; sudo apt install ros-dev-tools -y
+
+<span class="cmt"># ROS 2 Jazzy completo (inclui RViz, demos, tf, etc.)</span>
+sudo apt install ros-jazzy-desktop -y
+
+<span class="cmt"># Ponte ROS 2 &lt;-&gt; Gazebo (ros_gz_bridge, ros_gz_image, ...)</span>
+sudo apt install ros-jazzy-ros-gz -y</pre>
+      </div>
+      <div class="callout fix">
+        <span class="tag t-fix">Complemento</span>
+        O <code>ros-jazzy-ros-gz</code> traz o <code>ros_gz_image</code>, que faltava no ambiente inicial e causava o erro <code>package 'ros_gz_image' not found</code> no launch.
+      </div>
+
+      <h3>Carregar o ROS 2 automaticamente</h3>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Carrega o ROS 2 no terminal atual</span>
+source /opt/ros/jazzy/setup.bash
+
+<span class="cmt"># Torna o carregamento permanente em todo novo terminal</span>
+echo 'source /opt/ros/jazzy/setup.bash' &gt;&gt; ~/.bashrc</pre>
+      </div>
+      <div class="callout">
+        <span class="tag t-note">Nota</span>
+        No rascunho original isso era feito editando o <code>.bashrc</code> pelo <code>nano</code>. O comando <code>echo … &gt;&gt; ~/.bashrc</code> faz o mesmo de forma automática (a seta dupla <code>&gt;&gt;</code> <em>acrescenta</em> ao final do arquivo, sem apagar o conteúdo).
+      </div>
+
+      <h3>Testar a comunicação (talker / listener)</h3>
+      <p>Abra <strong>dois terminais novos</strong> e rode um comando em cada. O <em>listener</em> deve receber as mensagens do <em>talker</em>.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash — terminal A</span><button class="code__copy">Copiar</button></div>
+<pre>ros2 run demo_nodes_cpp talker</pre>
+      </div>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash — terminal B</span><button class="code__copy">Copiar</button></div>
+<pre>ros2 run demo_nodes_py listener</pre>
+      </div>
+    </section>
+
+    <!-- ===== 04 ===== -->
+    <section id="s4">
+      <h2 class="step"><span class="step-num">04</span> Instalar o Middleware (Micro-XRCE-DDS Agent)</h2>
+      <p>É a ponte de comunicação que leva os tópicos internos do PX4 (uORB) para o ROS 2 via DDS.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Clona, compila e instala o Agent</span>
+cd
+git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
+cd Micro-XRCE-DDS-Agent
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+
+<span class="cmt"># Atualiza o cache de bibliotecas compartilhadas</span>
+sudo ldconfig /usr/local/lib/</pre>
+      </div>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Teste: inicia o Agent escutando UDP na porta 8888</span>
+<span class="cmt"># (feche com Ctrl+C após confirmar que inicia)</span>
+cd ~/Micro-XRCE-DDS-Agent/
+MicroXRCEAgent udp4 -p 8888</pre>
+      </div>
+    </section>
+
+    <!-- ===== 05 ===== -->
+    <section id="s5">
+      <h2 class="step"><span class="step-num">05</span> Mundos e modelos do Gazebo</h2>
+      <p>Baixa e extrai os <strong>mundos e modelos criados para o projeto</strong> (plataforma UERJ, flares, torres, etc.) na pasta padrão de simulação. Eles convivem com os modelos originais do PX4 sem sobrescrevê-los.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Baixa o pacote de mundos/modelos do Google Drive (confirm=t p/ arquivo grande)</span>
+curl -L "https://drive.usercontent.google.com/download?id=1ZrOQYSJkF2iC9E3WfL-aPIoe1Xb52ykT&amp;export=download&amp;confirm=t" -o ~/simulation-gazebo.zip
+
+<span class="cmt"># Extrai na pasta pessoal (cria/mescla ~/.simulation-gazebo)</span>
+unzip -o ~/simulation-gazebo.zip -d ~/
+
+<span class="cmt"># Remove o zip para liberar espaço</span>
+rm ~/simulation-gazebo.zip</pre>
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Dica</span>
+        Confira o tamanho com <code>ls -lh ~/simulation-gazebo.zip</code> antes de extrair — se o arquivo tiver poucos KB, o Drive devolveu a página de aviso em vez do arquivo (o parâmetro <code>confirm</code> é justamente para pular esse aviso em arquivos grandes, acima de ~100&nbsp;MB).
+      </div>
+    </section>
+
+    <!-- ===== 06 ===== -->
+    <section id="s6">
+      <h2 class="step"><span class="step-num">06</span> Copiar os plugins compilados do Gazebo</h2>
+      <p>Os plugins do Gazebo (câmera GStreamer, fluxo óptico, plataforma móvel) precisam ser os <strong>compilados nesta máquina</strong> — eles carregam um caminho interno (RUNPATH) que aponta para o build local do PX4.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Copia os .so gerados no build do PX4 para a pasta de plugins da simulação</span>
+cp ~/PX4-Autopilot/build/px4_sitl_default/src/modules/simulation/gz_plugins/lib*.so ~/.simulation-gazebo/plugins/</pre>
+      </div>
+      <div class="callout warn">
+        <span class="tag t-warn">Por quê?</span>
+        Os plugins que vêm dentro do zip de mundos foram compilados em <em>outra</em> máquina, com o caminho <code>/home/keyslav/…</code> gravado no binário. Ao copiar os desta máquina, o caminho passa a existir e some o erro <code>libOpticalFlow.so: cannot open shared object file</code>.
+      </div>
+    </section>
+
+    <!-- ===== 07 ===== -->
+    <section id="s7">
+      <h2 class="step"><span class="step-num">07</span> Baixar e compilar os pacotes do projeto</h2>
+      <p>Clona os quatro repositórios no workspace ROS 2, resolve dependências e compila.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Cria o workspace e clona os 4 pacotes (cada um na sua branch/versão)</span>
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
+git clone -b V1.0  https://github.com/Keyslav/drone_inspetor.git
+git clone -b v1.0  https://github.com/Keyslav/drone_inspetor_msgs.git
+git clone -b main  https://github.com/PX4/px4_msgs.git
+git clone -b main  https://github.com/PX4/px4_ros_com.git</pre>
+      </div>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Resolve e instala as dependências ROS declaradas nos pacotes</span>
+cd ~/ros2_ws
+sudo rosdep init
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+
+<span class="cmt"># Biblioteca de visão computacional usada pelos nós de detecção</span>
+pip install --break-system-packages ultralytics
+
+<span class="cmt"># Compila o workspace (--symlink-install facilita editar scripts sem recompilar)</span>
+colcon build --symlink-install
+
+<span class="cmt"># Carrega o workspace automaticamente em todo novo terminal</span>
+echo 'source ~/ros2_ws/install/setup.bash' &gt;&gt; ~/.bashrc</pre>
+      </div>
+      <div class="callout">
+        <span class="tag t-note">Nota</span>
+        Se o <code>sudo rosdep init</code> reclamar que já foi inicializado, ignore — basta seguir com <code>rosdep update</code>.
+      </div>
+    </section>
+
+    <!-- ===== 08 ===== -->
+    <section id="s8">
+      <h2 class="step"><span class="step-num">08</span> Instalar o airframe 4030 no firmware</h2>
+      <p>Registra o airframe de simulação do projeto (<code>4030_gz_x500_uerj</code>) dentro do PX4 e recompila.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Caminhos de origem (pacote) e destino (firmware)</span>
+SRC=~/ros2_ws/src/drone_inspetor/drone_inspetor/config/airframe
+DST=~/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes
+
+<span class="cmt"># Copia o arquivo do airframe para o firmware</span>
+cp "$SRC/4030_gz_x500_uerj" "$DST/"
+
+<span class="cmt"># Registra o airframe no CMakeLists da v1.16 (insere a linha após 4001_gz_x500)</span>
+cd ~/PX4-Autopilot
+sed -i '/4001_gz_x500$/a\	4030_gz_x500_uerj' ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt
+
+<span class="cmt"># Recompila o firmware já com o novo airframe</span>
+make px4_sitl</pre>
+      </div>
+      <div class="callout fix">
+        <span class="tag t-fix">Correção</span>
+        Acrescentei o <code>cd ~/PX4-Autopilot</code> antes do <code>sed</code> — no rascunho o comando usava um caminho relativo sem estar na pasta certa. <strong>Não</strong> substitua o <code>CMakeLists.txt</code> inteiro por uma cópia: use o <code>sed</code> para inserir só a linha (versões diferentes do arquivo quebram o build com erros como <code>1060_gazebo-classic_rover doesn't exist</code>).
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Verificação</span>
+        Confirme a inserção com <code>grep 4030 ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt</code> — a linha deve estar indentada com <strong>tab</strong>, igual às vizinhas.
+      </div>
+    </section>
+
+    <!-- ===== 09 ===== -->
+    <section id="s9">
+      <h2 class="step"><span class="step-num">09</span> Baixar as redes treinadas (.pt)</h2>
+      <p>Baixa os pesos das redes de visão computacional já treinadas e os coloca na pasta <code>redes_treinadas</code> do pacote.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># gdown lida bem com arquivos grandes do Google Drive</span>
+pip install --break-system-packages -q gdown 2>/dev/null || pip3 install --user -q gdown
+
+<span class="cmt"># Baixa o pacote de redes treinadas</span>
+cd ~
+gdown --id 1QBITOiu6GnH584STF-9gxhvHNBZhtxmp -O redes_treinadas.zip
+
+<span class="cmt"># Extrai os .pt direto na pasta do pacote (os arquivos estão na raiz do zip)</span>
+unzip -o ~/redes_treinadas.zip -d ~/ros2_ws/src/drone_inspetor/drone_inspetor/redes_treinadas
+
+<span class="cmt"># Remove o zip</span>
+rm ~/redes_treinadas.zip</pre>
+      </div>
+      <div class="callout">
+        <span class="tag t-note">Alternativa com curl</span>
+        Se preferir não instalar o <code>gdown</code>, use o mesmo padrão do passo 05:
+        <code>curl -L "https://drive.usercontent.google.com/download?id=1QBITOiu6GnH584STF-9gxhvHNBZhtxmp&amp;export=download&amp;confirm=t" -o ~/redes_treinadas.zip</code>
+      </div>
+    </section>
+
+    <!-- ===== 10 ===== -->
+    <section id="s10">
+      <h2 class="step"><span class="step-num">10</span> Corrigir o conflito do NumPy</h2>
+      <p>O <code>ultralytics</code> instala o NumPy 2.x, que é incompatível com o <code>cv2</code>/<code>cv_bridge</code> (compilados contra o NumPy 1.x). Remover a versão instalada pelo pip devolve o controle ao NumPy 1.x do sistema (pacote <code>python3-numpy</code>).</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Remove o NumPy instalado via pip (revela o NumPy 1.x do apt)</span>
+python3 -m pip uninstall -y numpy --break-system-packages</pre>
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Verificação</span>
+        Confirme que o NumPy ativo é 1.x:
+        <code>python3 -c "import numpy; print(numpy.__version__)"</code>.
+        Se por algum motivo faltar o NumPy do sistema, instale a versão compatível com
+        <code>pip install --break-system-packages "numpy&lt;2"</code> (nunca 2.x, senão o <code>cv2</code> volta a quebrar).
+      </div>
+    </section>
+
+    <!-- ===== 11 ===== -->
+    <section id="s11">
+      <h2 class="step"><span class="step-num">11</span> QGroundControl (estação de solo)</h2>
+      <p>Interface de controle e telemetria. Detecta o PX4 automaticamente por UDP (porta 14550) quando a simulação está rodando.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Dá acesso às portas seriais (necessário p/ drone real via USB)</span>
+sudo usermod -aG dialout "$(id -un)"
+
+<span class="cmt"># Desativa o ModemManager, que pode "sequestrar" a porta serial do QGC</span>
+sudo systemctl mask --now ModemManager.service
+
+<span class="cmt"># Dependências de vídeo (GStreamer) e de interface gráfica</span>
+sudo apt install gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl -y
+sudo apt install python3-gi python3-gst-1.0 -y
+sudo apt install libxcb-xinerama0 libxkbcommon-x11-0 libxcb-cursor-dev -y
+
+<span class="cmt"># Suporte a AppImage (no Ubuntu 24.04 o pacote é libfuse2t64)</span>
+sudo apt install libfuse2t64 -y</pre>
+      </div>
+      <div class="callout fix">
+        <span class="tag t-fix">Correção</span>
+        No Ubuntu 24.04 o pacote FUSE chama-se <code>libfuse2t64</code> (não <code>libfuse2</code>). Sem ele, o AppImage falha com <code>error loading libfuse.so.2</code>.
+      </div>
+
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Baixa o AppImage do QGroundControl (-L segue redirecionamentos, -o salva o arquivo)</span>
+cd &amp;&amp; mkdir -p QGC &amp;&amp; cd QGC
+curl -L "https://d176tv9ibo4jno.cloudfront.net/builds/master/QGroundControl-x86_64.AppImage" -o QGroundControl-x86_64.AppImage
+
+<span class="cmt"># Torna o AppImage executável</span>
+chmod +x QGroundControl-x86_64.AppImage
+
+<span class="cmt"># Executa o QGroundControl</span>
+./QGroundControl-x86_64.AppImage</pre>
+      </div>
+      <div class="callout fix">
+        <span class="tag t-fix">Correção</span>
+        O <code>curl</code> original não tinha <code>-L</code> nem <code>-o</code>, então ele apenas jogava a resposta na tela sem salvar o arquivo. Adicionei <code>-L</code> (segue redirecionamentos) e <code>-o</code> (grava no disco).
+      </div>
+      <div class="callout">
+        <span class="tag t-note">Nota</span>
+        A adição ao grupo <code>dialout</code> só vale após <strong>logout/login</strong>. Para SITL isso não é crítico (a conexão é por UDP), mas é necessário para drone real via USB.
+      </div>
+    </section>
+
+    <!-- ===== 12 ===== -->
+    <section id="s12">
+      <h2 class="step"><span class="step-num">12</span> Execução do projeto</h2>
+      <p>Com tudo instalado, o projeto sobe em <strong>cinco terminais</strong>. Abra um terminal novo para cada um (todos já carregam ROS 2 e o workspace pelo <code>.bashrc</code>).</p>
+
+      <div class="terminals">
+
+        <div class="terminal-card">
+          <div class="terminal-card__head"><span class="dot"></span>Terminal 1 — Mundo físico (Gazebo, sem visual)</div>
+          <div class="terminal-card__body">
+            <p>Inicia a simulação do mundo no Gazebo em modo <em>headless</em> (sem janela gráfica).</p>
+            <div class="code">
+              <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre>bash ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts/projeto_gazebo.sh</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-card">
+          <div class="terminal-card__head"><span class="dot"></span>Terminal 2 — Visualização gráfica (opcional)</div>
+          <div class="terminal-card__body">
+            <p>Abre a janela do Gazebo (cliente GUI) conectada à simulação do Terminal 1.</p>
+            <div class="code">
+              <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre>gz sim -g</pre>
+            </div>
+            <div class="callout tip" style="margin-top:.6rem">
+              <span class="tag t-tip">Dica</span>
+              Em máquinas com GPU NVIDIA, use o script do pacote que força a renderização na NVIDIA:
+              <code>bash ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts/gz_sim.sh</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-card">
+          <div class="terminal-card__head"><span class="dot"></span>Terminal 3 — Firmware PX4 + drone</div>
+          <div class="terminal-card__body">
+            <p>Inicia o PX4 e insere o drone no mundo <code>Plataforma_UERJ</code> usando o airframe 4030.</p>
+            <div class="code">
+              <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre>cd ~/PX4-Autopilot
+SIM_GZ_HOME_LAT=-22.633890 SIM_GZ_HOME_LON=-40.093330 SIM_GZ_HOME_ALT=0 GZ_IP=127.0.0.1 PX4_GZ_STANDALONE=1 PX4_GZ_WORLD=Plataforma_UERJ PX4_SYS_AUTOSTART=4030 PX4_GZ_MODEL_POSE="-70,-27,57" ./build/px4_sitl_default/bin/px4</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-card">
+          <div class="terminal-card__head"><span class="dot"></span>Terminal 4 — Middleware uXRCE-DDS</div>
+          <div class="terminal-card__body">
+            <p>Sobe a ponte que conecta o PX4 ao ROS 2 (porta UDP 8888).</p>
+            <div class="code">
+              <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre>MicroXRCEAgent udp4 -p 8888</pre>
+            </div>
+            <div class="callout fix" style="margin-top:.6rem">
+              <span class="tag t-fix">Complemento</span>
+              Este terminal estava em branco no rascunho — o comando correto é o <code>MicroXRCEAgent udp4 -p 8888</code> (mesmo do teste do passo 04).
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-card">
+          <div class="terminal-card__head"><span class="dot"></span>Terminal 5 — Aplicação do projeto</div>
+          <div class="terminal-card__body">
+            <p>Lança a estação de solo do projeto (detecção, missão e controle).</p>
+            <div class="code">
+              <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre>ros2 launch drone_inspetor ground_station_launch.py</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout tip">
+        <span class="tag t-tip">Ordem de subida</span>
+        Suba na ordem 1 → 3 → 4 → 5 (o Terminal 2 é opcional e pode entrar a qualquer momento). O PX4 (T3) só encontra o mundo se o Gazebo (T1) já estiver rodando.
+      </div>
+    </section>
+
+    <footer>
+      <p>Guia de instalação do projeto <strong>DRONE_INSPETOR</strong> · Ubuntu 24.04 · PX4 v1.16 (commit <code>94bbd2d6</code>) · ROS 2 Jazzy.</p>
+      <p>Gerado para publicação estática — pode ser hospedado em qualquer servidor web ou GitHub Pages.</p>
+    </footer>
+
+  </main>
+</div>
+<script src="assets/script.js"></script>
+</body>
+</html>
