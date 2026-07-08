@@ -568,11 +568,7 @@ chmod +x QGroundControl-x86_64.AppImage
     <!-- ===== 13 ===== -->
     <section id="s13">
       <h2 class="step"><span class="step-num">13</span> Execução do projeto</h2>
-      <p>Cada comando abaixo <strong>abre seu próprio terminal</strong>, executa e deixa o terminal original <strong>livre na hora</strong> para o próximo. Basta rodar um após o outro, na ordem 1 → 3 → 4 → 5 (o 2 é opcional).</p>
-      <div class="callout tip">
-        <span class="tag t-tip">Como funciona</span>
-        O <code>gnome-terminal … -- bash -ic "…; exec bash"</code> abre uma nova janela que carrega o ROS 2 (pelo <code>.bashrc</code>), roda o comando e permanece aberta para você ver os logs. O <code>gnome-terminal</code> retorna imediatamente, então o terminal atual não fica preso. No WSL2, se faltar: <code>sudo apt install gnome-terminal</code>.
-      </div>
+      <p>Com tudo instalado, o projeto sobe em <strong>cinco terminais</strong>. Abra um terminal novo para cada comando (todos já carregam ROS 2 e o workspace pelo <code>.bashrc</code>) e execute na ordem 1 → 3 → 4 → 5 (o 2 é opcional).</p>
 
       <div class="terminals">
 
@@ -582,7 +578,9 @@ chmod +x QGroundControl-x86_64.AppImage
             <p>Inicia a simulação do mundo no Gazebo em modo <em>headless</em> (sem janela gráfica).</p>
             <div class="code">
               <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre>gnome-terminal --title="1-Gazebo" -- bash -ic 'cd ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts &amp;&amp; bash projeto_gazebo.sh; exec bash'</pre>
+<pre><span class="cmt"># entre na pasta scripts (o projeto_gazebo.sh chama simulation-gazebo por caminho relativo)</span>
+cd ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts
+bash projeto_gazebo.sh</pre>
             </div>
           </div>
         </div>
@@ -593,7 +591,7 @@ chmod +x QGroundControl-x86_64.AppImage
             <p>Abre a janela do Gazebo (cliente GUI) conectada à simulação do Terminal 1.</p>
             <div class="code">
               <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre>gnome-terminal --title="2-GazeboGUI" -- bash -ic 'gz sim -g; exec bash'</pre>
+<pre>gz sim -g</pre>
             </div>
             <div class="callout tip" style="margin-top:.6rem">
               <span class="tag t-tip">Dica</span>
@@ -609,7 +607,8 @@ chmod +x QGroundControl-x86_64.AppImage
             <p>Inicia o PX4 e insere o drone no mundo <code>Plataforma_UERJ</code> usando o airframe 4030.</p>
             <div class="code">
               <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre>gnome-terminal --title="3-PX4" -- bash -ic 'cd ~/PX4-Autopilot &amp;&amp; SIM_GZ_HOME_LAT=-22.633890 SIM_GZ_HOME_LON=-40.093330 SIM_GZ_HOME_ALT=0 GZ_IP=127.0.0.1 PX4_GZ_STANDALONE=1 PX4_GZ_WORLD=Plataforma_UERJ PX4_SYS_AUTOSTART=4030 PX4_GZ_MODEL_POSE="-70,-27,57" ./build/px4_sitl_default/bin/px4; exec bash'</pre>
+<pre>cd ~/PX4-Autopilot
+SIM_GZ_HOME_LAT=-22.633890 SIM_GZ_HOME_LON=-40.093330 SIM_GZ_HOME_ALT=0 GZ_IP=127.0.0.1 PX4_GZ_STANDALONE=1 PX4_GZ_WORLD=Plataforma_UERJ PX4_SYS_AUTOSTART=4030 PX4_GZ_MODEL_POSE="-70,-27,57" ./build/px4_sitl_default/bin/px4</pre>
             </div>
           </div>
         </div>
@@ -620,7 +619,7 @@ chmod +x QGroundControl-x86_64.AppImage
             <p>Sobe a ponte que conecta o PX4 ao ROS 2 (porta UDP 8888).</p>
             <div class="code">
               <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre>gnome-terminal --title="4-uXRCE" -- bash -ic 'MicroXRCEAgent udp4 -p 8888; exec bash'</pre>
+<pre>MicroXRCEAgent udp4 -p 8888</pre>
             </div>
             <div class="callout fix" style="margin-top:.6rem">
               <span class="tag t-fix">Complemento</span>
@@ -635,7 +634,7 @@ chmod +x QGroundControl-x86_64.AppImage
             <p>Lança a estação de solo do projeto (detecção, missão e controle).</p>
             <div class="code">
               <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre>gnome-terminal --title="5-App" -- bash -ic 'ros2 launch drone_inspetor ground_station_launch.py; exec bash'</pre>
+<pre>ros2 launch drone_inspetor ground_station_launch.py</pre>
             </div>
           </div>
         </div>
