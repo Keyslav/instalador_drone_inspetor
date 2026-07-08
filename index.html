@@ -399,6 +399,11 @@ python3 -c "import torch; print('CUDA disponível:', torch.cuda.is_available());
 <pre><span class="cmt"># Reinstala o PyTorch com suporte a CUDA 12.x</span>
 pip install --break-system-packages --force-reinstall torch torchvision --index-url https://download.pytorch.org/whl/cu124</pre>
       </div>
+      <div class="callout warn">
+        <span class="tag t-warn">Efeito colateral</span>
+        Essa reinstalação puxa o <strong>NumPy 2.x</strong> de volta, que quebra o <code>cv2</code>/<code>cv_bridge</code> e o <code>scipy</code>. <strong>Sempre que (re)instalar torch/ultralytics, rode o passo 11 depois</strong> para voltar ao NumPy 1.x:
+        <code>pip install --break-system-packages "numpy&lt;2"</code>.
+      </div>
 
       <h3>(Opcional) CUDA Toolkit completo</h3>
       <p>Só necessário se você for <strong>compilar</strong> código CUDA próprio (<code>nvcc</code>). <strong>Não é preciso</strong> para rodar o projeto.</p>
@@ -471,18 +476,26 @@ rm ~/redes_treinadas.zip</pre>
     <!-- ===== 11 ===== -->
     <section id="s11">
       <h2 class="step"><span class="step-num">11</span> Corrigir o conflito do NumPy</h2>
-      <p>O <code>ultralytics</code> instala o NumPy 2.x, que é incompatível com o <code>cv2</code>/<code>cv_bridge</code> (compilados contra o NumPy 1.x). Remover a versão instalada pelo pip devolve o controle ao NumPy 1.x do sistema (pacote <code>python3-numpy</code>).</p>
+      <p>O <code>ultralytics</code> e o PyTorch instalam o NumPy 2.x, que é incompatível com o <code>cv2</code>/<code>cv_bridge</code> (compilados contra o NumPy 1.x) e com o <code>scipy</code>. A correção é fixar o NumPy em 1.x — o <code>torch</code>, o <code>torchvision</code> e o <code>ultralytics</code> funcionam normalmente com ele.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre><span class="cmt"># Remove o NumPy instalado via pip (revela o NumPy 1.x do apt)</span>
-python3 -m pip uninstall -y numpy --break-system-packages</pre>
+<pre><span class="cmt"># Rebaixa o NumPy para a série 1.x (garante uma versão compatível instalada)</span>
+pip install --break-system-packages "numpy&lt;2"</pre>
+      </div>
+      <div class="callout warn">
+        <span class="tag t-warn">Execute por último</span>
+        Rode este passo <strong>depois</strong> de qualquer <code>pip install</code> de <code>ultralytics</code>, <code>torch</code> ou <code>torchvision</code> (incluindo o fallback do passo 08) — esses pacotes reintroduzem o NumPy 2.x toda vez.
       </div>
       <div class="callout tip">
         <span class="tag t-tip">Verificação</span>
-        Confirme que o NumPy ativo é 1.x:
-        <code>python3 -c "import numpy; print(numpy.__version__)"</code>.
-        Se por algum motivo faltar o NumPy do sistema, instale a versão compatível com
-        <code>pip install --break-system-packages "numpy&lt;2"</code> (nunca 2.x, senão o <code>cv2</code> volta a quebrar).
+        Confirme que o NumPy ativo é 1.x e que tudo importa junto:
+        <code>python3 -c "import numpy, torch; print(numpy.__version__, torch.cuda.is_available())"</code>.
+        A versão deve começar com <code>1.</code> (ex.: 1.26.4).
+      </div>
+      <div class="callout">
+        <span class="tag t-note">Alternativa</span>
+        Se preferir apenas remover o NumPy do pip e usar o do sistema (<code>python3-numpy</code>, 1.26.x no Ubuntu 24.04):
+        <code>python3 -m pip uninstall -y numpy --break-system-packages</code>.
       </div>
     </section>
 
