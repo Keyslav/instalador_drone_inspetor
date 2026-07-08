@@ -299,13 +299,24 @@ cp ~/PX4-Autopilot/build/px4_sitl_default/src/modules/simulation/gz_plugins/lib*
       <p>Clona os quatro repositórios no workspace ROS 2, resolve dependências e compila.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre><span class="cmt"># Cria o workspace e clona os 4 pacotes (cada um na sua branch/versão)</span>
+<pre><span class="cmt"># Cria o workspace e clona os pacotes do projeto (branches fixas)</span>
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
 git clone -b V1.0  https://github.com/Keyslav/drone_inspetor.git
 git clone -b v1.0  https://github.com/Keyslav/drone_inspetor_msgs.git
-git clone -b main  https://github.com/PX4/px4_msgs.git
-git clone -b main  https://github.com/PX4/px4_ros_com.git</pre>
+
+<span class="cmt"># px4_msgs FIXADO no commit que casa com o firmware PX4 v1.16</span>
+<span class="cmt"># (clonar 'main' pega uma versão mais nova e quebra a desserialização das mensagens)</span>
+git clone https://github.com/PX4/px4_msgs.git
+git -C px4_msgs checkout 57e96edf0772fb548cbc352b332e67e76fc64756
+
+<span class="cmt"># px4_ros_com FIXADO na mesma versão da máquina de referência</span>
+git clone https://github.com/PX4/px4_ros_com.git
+git -C px4_ros_com checkout 86e9aeb20e55a4673fa8a9f1c29ea06a6c5ad1af</pre>
+      </div>
+      <div class="callout warn">
+        <span class="tag t-warn">Por que fixar o px4_msgs</span>
+        As definições de mensagem do <code>px4_msgs</code> mudam a cada versão do PX4. Se você clonar a branch <code>main</code> (alvo móvel), ela fica <strong>mais nova que o firmware</strong> v1.16 e o tamanho serializado de <code>VehicleStatus</code>/<code>HomePosition</code> passa a divergir em 1 byte — resultando em <code>Fast CDR exception</code> e <code>RTPS_READER_HISTORY Error … payload size</code>, com a FSM travada em <em>DESATIVADO</em>. Por isso fixamos o commit <code>57e96ed</code>, que corresponde ao PX4 v1.16.
       </div>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
