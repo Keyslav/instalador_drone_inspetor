@@ -568,7 +568,30 @@ chmod +x QGroundControl-x86_64.AppImage
     <!-- ===== 13 ===== -->
     <section id="s13">
       <h2 class="step"><span class="step-num">13</span> Execução do projeto</h2>
-      <p>Com tudo instalado, o projeto sobe em <strong>cinco terminais</strong>. Abra um terminal novo para cada um (todos já carregam ROS 2 e o workspace pelo <code>.bashrc</code>).</p>
+      <p>Com tudo instalado, o projeto sobe em <strong>cinco processos</strong>. Você pode subir tudo de uma vez com o <strong>script automático</strong> (recomendado) ou abrir os terminais manualmente.</p>
+
+      <h3>Modo automático (recomendado)</h3>
+      <p>O script <code>executar_projeto.sh</code> abre cada componente em seu próprio terminal e devolve o controle na hora — o terminal onde você o chamou continua livre.</p>
+      <div class="code">
+        <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
+<pre><span class="cmt"># Garante que você tem a última versão do pacote (o script vem com ela)</span>
+git -C ~/ros2_ws/src/drone_inspetor pull
+
+<span class="cmt"># Sobe todo o projeto em 5 terminais automaticamente</span>
+bash ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts/executar_projeto.sh</pre>
+      </div>
+      <div class="callout">
+        <span class="tag t-note">O que ele faz</span>
+        Dispara, na ordem correta e com pausas entre eles, os 5 processos abaixo, cada um em uma janela de terminal própria (com ROS 2 e o workspace já carregados). As janelas ficam abertas ao final de cada comando, para você ver logs e erros.
+      </div>
+      <div class="callout tip">
+        <span class="tag t-tip">Sem terminal gráfico? (WSL2)</span>
+        O script usa <code>gnome-terminal</code> (ou <code>xterm</code>/<code>konsole</code>). Se não houver nenhum instalado, use a versão em <strong>tmux</strong>, que roda tudo numa só janela:
+        <code>bash ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts/executar_projeto.sh --tmux</code> — depois <code>tmux attach -t drone</code> (troque de janela com <code>Ctrl+B</code> e <code>0</code>–<code>4</code>; encerre com <code>tmux kill-session -t drone</code>). Se preferir o modo gráfico, instale um emulador: <code>sudo apt install gnome-terminal</code>.
+      </div>
+
+      <h3>Modo manual (referência do que o script executa)</h3>
+      <p>Se quiser rodar passo a passo, abra um terminal novo para cada um (todos já carregam ROS 2 e o workspace pelo <code>.bashrc</code>).</p>
 
       <div class="terminals">
 
@@ -578,7 +601,9 @@ chmod +x QGroundControl-x86_64.AppImage
             <p>Inicia a simulação do mundo no Gazebo em modo <em>headless</em> (sem janela gráfica).</p>
             <div class="code">
               <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre>bash ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts/projeto_gazebo.sh</pre>
+<pre><span class="cmt"># entre na pasta scripts (o projeto_gazebo.sh chama simulation-gazebo por caminho relativo)</span>
+cd ~/ros2_ws/src/drone_inspetor/drone_inspetor/scripts
+bash projeto_gazebo.sh</pre>
             </div>
           </div>
         </div>
