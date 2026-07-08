@@ -255,8 +255,11 @@ MicroXRCEAgent udp4 -p 8888</pre>
       <p>Baixa e extrai os <strong>mundos e modelos criados para o projeto</strong> (plataforma UERJ, flares, torres, etc.) na pasta padrão de simulação. Eles convivem com os modelos originais do PX4 sem sobrescrevê-los.</p>
       <div class="code">
         <div class="code__head"><span class="code__lang">bash</span><button class="code__copy">Copiar</button></div>
-<pre><span class="cmt"># Baixa o pacote de mundos/modelos do Google Drive (confirm=t p/ arquivo grande)</span>
-curl -L "https://drive.usercontent.google.com/download?id=1ZrOQYSJkF2iC9E3WfL-aPIoe1Xb52ykT&amp;export=download&amp;confirm=t" -o ~/simulation-gazebo.zip
+<pre><span class="cmt"># gdown lida com a confirmação de vírus do Google Drive em arquivos grandes</span>
+pip install --break-system-packages -q gdown 2>/dev/null || pip3 install --user -q gdown
+
+<span class="cmt"># Baixa o pacote de mundos/modelos do Google Drive (ID como argumento posicional)</span>
+gdown 1ZrOQYSJkF2iC9E3WfL-aPIoe1Xb52ykT -O ~/simulation-gazebo.zip
 
 <span class="cmt"># Extrai na pasta pessoal (cria/mescla ~/.simulation-gazebo)</span>
 unzip -o ~/simulation-gazebo.zip -d ~/
@@ -266,7 +269,12 @@ rm ~/simulation-gazebo.zip</pre>
       </div>
       <div class="callout tip">
         <span class="tag t-tip">Dica</span>
-        Confira o tamanho com <code>ls -lh ~/simulation-gazebo.zip</code> antes de extrair — se o arquivo tiver poucos KB, o Drive devolveu a página de aviso em vez do arquivo (o parâmetro <code>confirm</code> é justamente para pular esse aviso em arquivos grandes, acima de ~100&nbsp;MB).
+        O ID vai <strong>direto</strong> como argumento (as versões novas do <code>gdown</code> removeram a flag <code>--id</code>). Confira o tamanho com <code>ls -lh ~/simulation-gazebo.zip</code> antes de extrair — deve ter centenas de MB.
+      </div>
+      <div class="callout">
+        <span class="tag t-note">Alternativa com curl</span>
+        Sem instalar o <code>gdown</code>:
+        <code>curl -L "https://drive.usercontent.google.com/download?id=1ZrOQYSJkF2iC9E3WfL-aPIoe1Xb52ykT&amp;export=download&amp;confirm=t" -o ~/simulation-gazebo.zip</code>
       </div>
     </section>
 
@@ -456,9 +464,9 @@ make px4_sitl</pre>
 <pre><span class="cmt"># gdown lida bem com arquivos grandes do Google Drive</span>
 pip install --break-system-packages -q gdown 2>/dev/null || pip3 install --user -q gdown
 
-<span class="cmt"># Baixa o pacote de redes treinadas</span>
+<span class="cmt"># Baixa o pacote de redes treinadas (ID como argumento posicional, sem --id)</span>
 cd ~
-gdown --id 1QBITOiu6GnH584STF-9gxhvHNBZhtxmp -O redes_treinadas.zip
+gdown 1QBITOiu6GnH584STF-9gxhvHNBZhtxmp -O redes_treinadas.zip
 
 <span class="cmt"># Extrai os .pt direto na pasta do pacote (os arquivos estão na raiz do zip)</span>
 unzip -o ~/redes_treinadas.zip -d ~/ros2_ws/src/drone_inspetor/drone_inspetor/redes_treinadas
